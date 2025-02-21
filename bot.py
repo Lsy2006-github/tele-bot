@@ -35,6 +35,12 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
     await context.bot.send_message(chat_id=ADMIN_ID, text=f"User {user_id} asked: {user_message}")
     await update.message.reply_text("I don't have an answer right now. The admin will reply soon!")
 
+# Function to handle FAQ command
+async def faq(update: Update, context: CallbackContext) -> None:
+    faq_text = "\n".join([f"• *{question.capitalize()}* - {answer}" for question, answer in FAQS.items()])
+    await update.message.reply_text(f"Here are some frequently asked questions:\n\n{faq_text}", parse_mode="Markdown")
+
+
 # Function to allow admin to reply
 async def reply(update: Update, context: CallbackContext) -> None:
     if update.message.chat_id != ADMIN_ID:
@@ -56,10 +62,6 @@ async def reply(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("No pending question from this user.")
 
-async def faq(update: Update, context: CallbackContext) -> None:
-    faq_text = "\n".join([f"• *{question.capitalize()}* - {answer}" for question, answer in FAQS.items()])
-    await update.message.reply_text(f"Here are some frequently asked questions:\n\n{faq_text}", parse_mode="Markdown")
-
 def main():
     TOKEN = "8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
 
@@ -72,3 +74,6 @@ def main():
 
     logger.info("Bot is running...")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
