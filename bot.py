@@ -33,7 +33,6 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
     # If question is not in FAQs, store it and notify the admin
     unanswered_questions[user_id] = user_message
     await context.bot.send_message(chat_id=ADMIN_ID, text=f"User {user_id} asked: {user_message}")
-
     await update.message.reply_text("I don't have an answer right now. The admin will reply soon!")
 
 # Function to allow admin to reply
@@ -57,18 +56,19 @@ async def reply(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("No pending question from this user.")
 
-# Main function to run the bot
+async def faq(update: Update, context: CallbackContext) -> None:
+    faq_text = "\n".join([f"• *{question.capitalize()}* - {answer}" for question, answer in FAQS.items()])
+    await update.message.reply_text(f"Here are some frequently asked questions:\n\n{faq_text}", parse_mode="Markdown")
+
 def main():
     TOKEN = "8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
 
     app = Application.builder().token(TOKEN).build()
 
     # Command handlers
+    app.add_handler(CommandHandler("faq", faq))  # FAQ command
     app.add_handler(CommandHandler("reply", reply))  # Admin replies
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
 
     logger.info("Bot is running...")
     app.run_polling()
-
-if __name__ == "__main__":
-    main()
