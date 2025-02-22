@@ -3,10 +3,16 @@ from datetime import datetime
 import pytz
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from pymongo import MongoClient
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# MongoDB connection
+client = MongoClient("mongodb://localhost:27017/")
+db = client["telebot_db"]
+collection = db["shower"]
 
 # FAQs
 FAQS = {
@@ -17,7 +23,9 @@ FAQS = {
 unanswered_questions = {}
 
 # List of admin IDs (replace with your actual numeric IDs)
-ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
+# ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
+ADMIN_IDS = [1517694368]  # Testing environment
+SHOWER_IDS = []
 
 # Function to handle incoming messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
@@ -81,6 +89,64 @@ async def admin_list(update: Update, context: CallbackContext) -> None:
 
     admin_list_text = "\n".join(admin_info)
     await update.message.reply_text(f"Admin List:\n\n{admin_list_text}")
+    
+async def add_shower(update: Update, context: CallbackContext) -> None:
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text("Usage: /add_shower <room_id> <number_of_people>")
+        return
+
+    room_id = args[0]  # Extract room ID
+    try:
+        number_of_people = int(args[1])  # Extract number of people
+    except ValueError:
+        await update.message.reply_text("The number of people must be an integer.")
+        return
+    
+    # Get current time in Singapore
+    tz = pytz.timezone('Asia/Singapore')
+    current_time = datetime.now(tz)
+    formatted_time = current_time.strftime("%d/%m/%Y %H:%M")
+    
+    if room_id == '1':
+        room_id = "Male Shower Left"
+    elif room_id == '2':
+        room_id = "Male Shower Right"
+    elif room_id == '3':
+        room_id = "Female Shower Left"
+    elif room_id == '4':
+        room_id = "Female Shower Right"
+    else:
+        await update.message.reply_text("Invalid room ID. Please enter a number between 1 and 4.")
+        return
+
+    collection.insert_one({
+        "room_id": room_id,
+        "number_of_people": number_of_people,
+        "timestamp": formatted_time,
+        "ref_time": current_time
+    })
+    await update.message.reply_text(f"Shower record added successfully for room {room_id} with {number_of_people} people at {formatted_time}.")
+    
+async def shower_status(update: Update, context: CallbackContext) -> None:
+    pipeline = [
+        {"$sort": {"ref_time": -1}},
+        {"$group": {
+            "_id": "$room_id",
+            "latest_record": {"$first": "$$ROOT"}
+        }}
+    ]
+    results = list(collection.aggregate(pipeline))
+    if results:
+        latest_timestamp = max(result["latest_record"]["timestamp"] for result in results)
+        response = f"Latest shower records:\n(Last updated: {latest_timestamp})\n"
+        for result in results:
+            room_id = result["latest_record"]["room_id"]
+            number_of_people = result["latest_record"]["number_of_people"]
+            response += f"\n{room_id}: {number_of_people} people on queue"
+        await update.message.reply_text(response)
+    else:
+        await update.message.reply_text("No shower records found.")
 
 def main():
     TOKEN = "8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
@@ -92,6 +158,8 @@ def main():
     app.add_handler(CommandHandler("faq", faq))  # FAQ command
     app.add_handler(CommandHandler("reply", reply))  # Admin replies
     app.add_handler(CommandHandler("admins", admin_list))  # Admin list command
+    app.add_handler(CommandHandler("add_shower", add_shower))  # Add shower ID command
+    app.add_handler(CommandHandler("shower", shower_status))  # Shower status command
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
 
     logger.info("Bot is running...")
