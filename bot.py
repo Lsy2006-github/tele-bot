@@ -10,16 +10,14 @@ logger = logging.getLogger(__name__)
 
 # FAQs
 FAQS = {
-    "operating hours": "We are open from 9 AM to 10 PM daily.",
-    "location": "We are located at 123 Main Street, City.",
-    "menu": "Our menu includes coffee, tea, and snacks. Visit our website for more details.",
+    'test': 'This is a test FAQ.',
 }
 
 # Dictionary to store unanswered questions
 unanswered_questions = {}
 
 # List of admin IDs (replace with your actual numeric IDs)
-ADMIN_IDS = [1517694368, 1234567890]  # Replace with your Telegram numeric user IDs
+ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
 
 # Function to handle incoming messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
@@ -70,6 +68,20 @@ async def reply(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("No pending question from this user.")
 
+# Function to show admin list
+async def admin_list(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id not in ADMIN_IDS:
+        await update.message.reply_text("You are not authorized to use this command.")
+        return
+
+    admin_info = []
+    for admin_id in ADMIN_IDS:
+        user = await context.bot.get_chat(admin_id)
+        admin_info.append(f"• {user.username} (ID: {admin_id})")
+
+    admin_list_text = "\n".join(admin_info)
+    await update.message.reply_text(f"Admin List:\n\n{admin_list_text}")
+
 def main():
     TOKEN = "8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
 
@@ -79,6 +91,7 @@ def main():
     app.add_handler(CommandHandler("start", faq))  # Start command
     app.add_handler(CommandHandler("faq", faq))  # FAQ command
     app.add_handler(CommandHandler("reply", reply))  # Admin replies
+    app.add_handler(CommandHandler("admins", admin_list))  # Admin list command
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
 
     logger.info("Bot is running...")
