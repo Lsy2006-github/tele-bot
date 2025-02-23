@@ -11,7 +11,7 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set environment variables
-ENV TOKEN="YOUR_BOT_TOKEN"
+ENV TOKEN="8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
 
 # Run the bot
 CMD ["python", "bot.py"]
