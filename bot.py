@@ -3,16 +3,26 @@ from datetime import datetime
 import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
-from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # MongoDB connection
-client = MongoClient("mongodb://localhost:27017/")
-db = client["telebot_db"]
-collection = db["shower"]
+uri = "mongodb://lianyang12lol:hXGufXZiT6KPqKFe@lianyang12lol/?ssl=true&replicaSet=atlas-tcdynx-shard-0&authSource=admin&retryWrites=true&w=majority&appName=telebotcluster"
+# Create a new client and connect to the server
+client = MongoClient(uri, server_api=ServerApi('1'))
+# Access the database and collection
+db = client['telebot']
+collection = db['shower']
+# Send a ping to confirm a successful connection
+try:
+    client.admin.command('ping')
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
 
 # FAQs
 FAQS = {'test': 'This is a test FAQ.'}
