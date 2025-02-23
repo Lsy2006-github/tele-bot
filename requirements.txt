@@ -1,2 +1,2 @@
-pymongo = 4.11.1
-python-telegram-bot = 21.10
+pymongo == 4.11.1
+python-telegram-bot == 21.10

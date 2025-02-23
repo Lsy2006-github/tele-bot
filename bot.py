@@ -11,16 +11,16 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=lo
 logger = logging.getLogger(__name__)
 
 # MongoDB connection
-uri = "mongodb://lianyang12lol:hXGufXZiT6KPqKFe@lianyang12lol/?ssl=true&replicaSet=atlas-tcdynx-shard-0&authSource=admin&retryWrites=true&w=majority&appName=telebotcluster"
+uri = "mongodb+srv://lianyang12lol:hXGufXZiT6KPqKFe@telebotcluster.jfekr.mongodb.net/?retryWrites=true&w=majority&appName=telebotcluster"
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
-# Access the database and collection
-db = client['telebot']
-collection = db['shower']
 # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")
+    # Access the database and collection
+    db = client['telebot']
+    collection = db['shower']
 except Exception as e:
     print(e)
 
