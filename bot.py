@@ -4,6 +4,7 @@ import pytz
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from pymongo import MongoClient
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -25,7 +26,7 @@ unanswered_questions = {}
 # List of admin IDs (replace with your actual numeric IDs)
 # ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
 ADMIN_IDS = [1517694368]  # Testing environment
-SHOWER_IDS = []
+SHOWER_IDS = [1517694368]
 
 # Function to handle incoming messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
@@ -91,43 +92,61 @@ async def admin_list(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(f"Admin List:\n\n{admin_list_text}")
     
 async def add_shower(update: Update, context: CallbackContext) -> None:
-    args = context.args
-    if len(args) < 2:
-        await update.message.reply_text("Usage: /add_shower <room_id> <number_of_people>")
+    if update.message.chat_id not in SHOWER_IDS:
+        await update.message.reply_text("You are not authorized to use this command.")
         return
 
-    room_id = args[0]  # Extract room ID
+    keyboard = [
+        [InlineKeyboardButton("Male Shower Left", callback_data='1')],
+        [InlineKeyboardButton("Male Shower Right", callback_data='2')],
+        [InlineKeyboardButton("Female Shower Left", callback_data='3')],
+        [InlineKeyboardButton("Female Shower Right", callback_data='4')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("Select the shower room:", reply_markup=reply_markup)
+    context.user_data['keyboard'] = keyboard  # Accessing context to store keyboard
+
+async def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    room_id = query.data
+
+    context.user_data['room_id'] = room_id
+    await query.edit_message_text(text=f"Selected option: {room_id}. Now, please enter the number of people:")
+
+async def handle_number_of_people(update: Update, context: CallbackContext) -> None:
+    if 'room_id' not in context.user_data:
+        await update.message.reply_text("Please select a shower room first using /add_shower.")
+        return
+
     try:
-        number_of_people = int(args[1])  # Extract number of people
+        number_of_people = int(update.message.text)
     except ValueError:
         await update.message.reply_text("The number of people must be an integer.")
         return
-    
+
+    room_id = context.user_data['room_id']
+    room_names = {
+        '1': "Male Shower Left",
+        '2': "Male Shower Right",
+        '3': "Female Shower Left",
+        '4': "Female Shower Right"
+    }
+    room_name = room_names.get(room_id)
+
     # Get current time in Singapore
     tz = pytz.timezone('Asia/Singapore')
     current_time = datetime.now(tz)
     formatted_time = current_time.strftime("%d/%m/%Y %H:%M")
-    
-    if room_id == '1':
-        room_id = "Male Shower Left"
-    elif room_id == '2':
-        room_id = "Male Shower Right"
-    elif room_id == '3':
-        room_id = "Female Shower Left"
-    elif room_id == '4':
-        room_id = "Female Shower Right"
-    else:
-        await update.message.reply_text("Invalid room ID. Please enter a number between 1 and 4.")
-        return
 
     collection.insert_one({
-        "room_id": room_id,
+        "room_id": room_name,
         "number_of_people": number_of_people,
         "timestamp": formatted_time,
         "ref_time": current_time
     })
-    await update.message.reply_text(f"Shower record added successfully for room {room_id} with {number_of_people} people at {formatted_time}.")
-    
+    await update.message.reply_text(f"Shower record added successfully for {room_name} with {number_of_people} people at {formatted_time}.")
+    del context.user_data['room_id']
 async def shower_status(update: Update, context: CallbackContext) -> None:
     pipeline = [
         {"$sort": {"ref_time": -1}},
@@ -159,7 +178,8 @@ def main():
     app.add_handler(CommandHandler("reply", reply))  # Admin replies
     app.add_handler(CommandHandler("admins", admin_list))  # Admin list command
     app.add_handler(CommandHandler("add_shower", add_shower))  # Add shower ID command
-    app.add_handler(CommandHandler("shower", shower_status))  # Shower status command
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
+    app.add_handler(CallbackQueryHandler(button))  # Handle button callbacks
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
 
     logger.info("Bot is running...")
