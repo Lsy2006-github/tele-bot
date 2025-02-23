@@ -23,7 +23,7 @@ unanswered_questions = {}
 # List of admin and shower IDs (replace with actual IDs)
 ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
 # ADMIN_IDS = [1517694368]  # Testing environment
-SHOWER_IDS = [1517694368]
+SHOWER_IDS = [1517694368, 1184047298, 692160074, 1121779599]
 
 # Function to handle messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
