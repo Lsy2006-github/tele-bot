@@ -104,7 +104,6 @@ async def add_shower(update: Update, context: CallbackContext) -> None:
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("Select the shower room:", reply_markup=reply_markup)
-    context.user_data['keyboard'] = keyboard  # Accessing context to store keyboard
 
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
@@ -178,8 +177,7 @@ def main():
     app.add_handler(CommandHandler("reply", reply))  # Admin replies
     app.add_handler(CommandHandler("admins", admin_list))  # Admin list command
     app.add_handler(CommandHandler("add_shower", add_shower))  # Add shower ID command
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
-    app.add_handler(CallbackQueryHandler(button))  # Handle button callbacks
+    app.add_handler(CommandHandler("shower", shower_status))  # Shower status command
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handle messages
 
     logger.info("Bot is running...")
