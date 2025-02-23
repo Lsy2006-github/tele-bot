@@ -21,8 +21,8 @@ FAQS = {'test': 'This is a test FAQ.'}
 unanswered_questions = {}
 
 # List of admin and shower IDs (replace with actual IDs)
-# ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
-ADMIN_IDS = [1517694368]  # Testing environment
+ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
+# ADMIN_IDS = [1517694368]  # Testing environment
 SHOWER_IDS = [1517694368]
 
 # Function to handle messages
@@ -171,7 +171,7 @@ def main():
     app.add_handler(CommandHandler("reply", reply))
     app.add_handler(CommandHandler("shower", shower_status))
     app.add_handler(CommandHandler("add_shower", add_shower))
-    app.add_handler(CallbackQueryHandler(handle_message))
+    app.add_handler(CallbackQueryHandler(button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_number_of_people))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
