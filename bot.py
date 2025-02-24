@@ -20,13 +20,15 @@ try:
     print("Pinged your deployment. You successfully connected to MongoDB!")
     # Access the database and collection
     db = client['telebot']
-    collection = db['shower']
+    shower_collection = db['shower']
+    faq_collection = db['faq']
+    packing_collection = db['packing']
 except Exception as e:
     print(e)
+    print("An error occurred while connecting to MongoDB. Check your URI or internet connection.")
+    exit()
 
-# FAQs
-FAQS = {'test': 'This is a test FAQ.'}
-
+FAQ_type = ["Registration", "Programmes", "Revival Nights", "Premises", "Others"]
 # Dictionary to store unanswered questions
 unanswered_questions = {}
 
@@ -51,10 +53,6 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("Please note that responses may be slower between 11 PM and 6 AM.")
 
     # Check if the message matches an FAQ
-    for question, answer in FAQS.items():
-        if question in user_message:
-            await update.message.reply_text(answer)
-            return
 
     # If question is not in FAQs, store it and notify the admins
     unanswered_questions[user_id] = user_message
@@ -76,10 +74,10 @@ async def handle_number_of_people(update: Update, context: CallbackContext) -> N
 
     room_id = context.user_data['room_id']
     room_names = {
-        '1': "Male Shower Left",
-        '2': "Male Shower Right",
-        '3': "Female Shower Left",
-        '4': "Female Shower Right"
+        '1': "Male Shower KB Side",
+        '2': "Male Shower Drum Side",
+        '3': "Female Shower KB Side",
+        '4': "Female Shower Drum Side"
     }
     room_name = room_names.get(room_id)
 
@@ -87,7 +85,7 @@ async def handle_number_of_people(update: Update, context: CallbackContext) -> N
     current_time = datetime.now(tz)
     formatted_time = current_time.strftime("%d/%m/%Y %H:%M")
 
-    collection.insert_one({
+    shower_collection.insert_one({
         "room_id": room_name,
         "number_of_people": number_of_people,
         "timestamp": formatted_time,
@@ -106,10 +104,10 @@ async def add_shower(update: Update, context: CallbackContext) -> None:
     context.user_data['awaiting_shower_selection'] = True  # Ensure shower selection is required first
 
     keyboard = [
-        [InlineKeyboardButton("Male Shower Left", callback_data='1')],
-        [InlineKeyboardButton("Male Shower Right", callback_data='2')],
-        [InlineKeyboardButton("Female Shower Left", callback_data='3')],
-        [InlineKeyboardButton("Female Shower Right", callback_data='4')]
+        [InlineKeyboardButton("Male Shower KB Side", callback_data='1')],
+        [InlineKeyboardButton("Male Shower Drum Side", callback_data='2')],
+        [InlineKeyboardButton("Female Shower KB Side", callback_data='3')],
+        [InlineKeyboardButton("Female Shower Drum Side", callback_data='4')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("Select the shower room:", reply_markup=reply_markup)
@@ -127,8 +125,15 @@ async def button(update: Update, context: CallbackContext) -> None:
 
 # Function to handle FAQ command
 async def faq(update: Update, context: CallbackContext) -> None:
-    faq_text = "\n".join([f"• *{question.capitalize()}* - {answer}" for question, answer in FAQS.items()])
-    await update.message.reply_text(f"Here are some frequently asked questions:\n\n{faq_text}", parse_mode="Markdown")
+    faq_text = "Here are some *Frequently Asked Questions* for the camp:\n"
+    for faq_type in FAQ_type:
+        faq_text += f"\n\n*{faq_type}*\n"
+        faqs = faq_collection.find({"type": faq_type}).sort("title", 1)
+        for faq in faqs:
+            faq_text += f"• {faq['title']} - {faq['message']}\n"
+    faq_text += "\n\nIf you have any other questions, feel free to ask the bot! We'll get back to you as soon as possible."
+
+    await update.message.reply_text(faq_text, parse_mode='Markdown')
 
 # Function to allow admin to reply
 async def reply(update: Update, context: CallbackContext) -> None:
@@ -157,7 +162,7 @@ async def shower_status(update: Update, context: CallbackContext) -> None:
         {"$sort": {"ref_time": -1}},
         {"$group": {"_id": "$room_id", "latest_record": {"$first": "$$ROOT"}}}
     ]
-    results = list(collection.aggregate(pipeline))
+    results = list(shower_collection.aggregate(pipeline))
 
     if results:
         latest_timestamp = max(result["latest_record"]["timestamp"] for result in results)
@@ -169,6 +174,13 @@ async def shower_status(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text(response)
     else:
         await update.message.reply_text("No shower records found.")
+        
+# Function to show packing list
+async def packing_list(update: Update, context: CallbackContext) -> None:
+    packing_text = "Here is the packing list for the camp\n\n"
+    photo_url = "./packing.jpg"  # Replace with your actual image URL
+    await update.message.reply_photo(photo=photo_url, caption=packing_text, parse_mode='Markdown')
+    
 
 # Function to add command handlers and start bot
 def main():
@@ -181,6 +193,7 @@ def main():
     app.add_handler(CommandHandler("reply", reply))
     app.add_handler(CommandHandler("shower", shower_status))
     app.add_handler(CommandHandler("add_shower", add_shower))
+    app.add_handler(CommandHandler("packing", packing_list))
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_number_of_people))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
