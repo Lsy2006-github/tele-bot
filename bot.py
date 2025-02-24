@@ -22,7 +22,8 @@ try:
     db = client['telebot']
     shower_collection = db['shower']
     faq_collection = db['faq']
-    packing_collection = db['packing']
+    users_collection = db['users']
+    print("Connected to the database and collection successfully!")
 except Exception as e:
     print(e)
     print("An error occurred while connecting to MongoDB. Check your URI or internet connection.")
@@ -33,9 +34,8 @@ FAQ_type = ["Registration", "Programmes", "Revival Nights", "Premises", "Others"
 unanswered_questions = {}
 
 # List of admin and shower IDs (replace with actual IDs)
-ADMIN_IDS = [1517694368, 1184047298, 692160074, 1121779599]  # Replace with your Telegram numeric user IDs
-# ADMIN_IDS = [1517694368]  # Testing environment
-SHOWER_IDS = [1517694368, 1184047298, 692160074, 1121779599]
+ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
+SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
 
 # Function to handle messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
@@ -158,22 +158,26 @@ async def reply(update: Update, context: CallbackContext) -> None:
 
 # Function to show latest shower records
 async def shower_status(update: Update, context: CallbackContext) -> None:
-    pipeline = [
-        {"$sort": {"ref_time": -1}},
-        {"$group": {"_id": "$room_id", "latest_record": {"$first": "$$ROOT"}}}
-    ]
-    results = list(shower_collection.aggregate(pipeline))
+    current_time = datetime.now(pytz.timezone('Asia/Singapore'))
+    if current_time.month == 3 and current_time.day >= 18:
+        pipeline = [
+            {"$sort": {"ref_time": -1}},
+            {"$group": {"_id": "$room_id", "latest_record": {"$first": "$$ROOT"}}}
+        ]
+        results = list(shower_collection.aggregate(pipeline))
 
-    if results:
-        latest_timestamp = max(result["latest_record"]["timestamp"] for result in results)
-        response = f"Latest shower records:\n(Last updated: {latest_timestamp})\n"
-        for result in results:
-            room_id = result["latest_record"]["room_id"]
-            number_of_people = result["latest_record"]["number_of_people"]
-            response += f"\n{room_id}: {number_of_people} people on queue"
-        await update.message.reply_text(response)
+        if results:
+            latest_timestamp = max(result["latest_record"]["timestamp"] for result in results)
+            response = f"Latest shower records:\n(Last updated: {latest_timestamp})\n"
+            for result in results:
+                room_id = result["latest_record"]["room_id"]
+                number_of_people = result["latest_record"]["number_of_people"]
+                response += f"\n{room_id}: {number_of_people} people on queue"
+            await update.message.reply_text(response)
+        else:
+            await update.message.reply_text("No shower records found.")
     else:
-        await update.message.reply_text("No shower records found.")
+        await update.message.reply_text("Function not available at the moment, stay tuned when the camp starts!")
         
 # Function to show packing list
 async def packing_list(update: Update, context: CallbackContext) -> None:
