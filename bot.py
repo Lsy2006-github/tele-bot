@@ -33,9 +33,14 @@ FAQ_type = ["Registration", "Programmes", "Revival Nights", "Premises", "Others"
 # Dictionary to store unanswered questions
 unanswered_questions = {}
 
-# List of admin and shower IDs (replace with actual IDs)
-ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
-SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
+# Function to update admin and shower IDs from the database
+def update_ids():
+    global ADMIN_IDS, SHOWER_IDS
+    ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
+    SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
+
+# Initial update of IDs
+update_ids()
 
 # Function to handle messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
