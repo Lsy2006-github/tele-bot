@@ -5,6 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+import threading
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -36,11 +37,12 @@ unanswered_questions = {}
 # Function to update admin and shower IDs from the database
 def update_ids():
     global ADMIN_IDS, SHOWER_IDS
+    print("Updating IDs...")
     ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
     SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
 
-# Initial update of IDs
-update_ids()
+    # Schedule the next update in 60 seconds
+    threading.Timer(60, update_ids).start()
 
 # Function to handle messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
@@ -191,7 +193,7 @@ async def packing_list(update: Update, context: CallbackContext) -> None:
     await update.message.reply_photo(photo=photo_url, caption=packing_text, parse_mode='Markdown')
     
 async def cmd_list (update: Update, context: CallbackContext) -> None:
-    if update.message.chat_id not in ADMIN_IDS or update.message.chat_id not in SHOWER_IDS:
+    if update.message.chat_id not in ADMIN_IDS and update.message.chat_id not in SHOWER_IDS:
         await update.message.reply_text("You are not authorized to use this command.")
         return
     await update.message.reply_text("Available commands for admins/shower IC:\n\n/reply - Reply to user\n/add_shower - Add shower entry")
@@ -202,6 +204,9 @@ def main():
     TOKEN = "8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
     
     app = Application.builder().token(TOKEN).build()
+    
+    # Initial update of IDs
+    update_ids()
 
     app.add_handler(CommandHandler("start", faq))
     app.add_handler(CommandHandler("faq", faq))
