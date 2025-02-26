@@ -185,6 +185,12 @@ async def packing_list(update: Update, context: CallbackContext) -> None:
     photo_url = "./packing.jpg"  # Replace with your actual image URL
     await update.message.reply_photo(photo=photo_url, caption=packing_text, parse_mode='Markdown')
     
+async def cmd_list (update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id not in ADMIN_IDS or update.message.chat_id not in SHOWER_IDS:
+        await update.message.reply_text("You are not authorized to use this command.")
+        return
+    await update.message.reply_text("Available commands for admins/shower IC:\n\n/reply - Reply to user\n/add_shower - Add shower entry")
+    
 
 # Function to add command handlers and start bot
 def main():
@@ -198,6 +204,7 @@ def main():
     app.add_handler(CommandHandler("shower", shower_status))
     app.add_handler(CommandHandler("add_shower", add_shower))
     app.add_handler(CommandHandler("packing", packing_list))
+    app.add_handler(CommandHandler("command", cmd_list))
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_number_of_people))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
