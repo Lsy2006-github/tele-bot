@@ -6,6 +6,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import threading
+from collections import defaultdict
+import time
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -38,20 +40,45 @@ unanswered_questions = {}
 def update_ids():
     global ADMIN_IDS, SHOWER_IDS
     print("Updating IDs...")
-    ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
-    SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
+    # ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
+    # SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
+    
+    ADMIN_IDS = [1517694368]  # Replace with your admin IDs
+    SHOWER_IDS = [1517694368]  # Replace with your shower IDs
 
     # Schedule the next update in 60 seconds
     threading.Timer(60, update_ids).start()
 
+# Dictionary to store user message timestamps
+user_message_timestamps = defaultdict(list)
+
 # Function to handle messages
 async def handle_message(update: Update, context: CallbackContext) -> None:
+    user_id = update.message.chat_id
+    current_time = time.time()
+
+    # Add current timestamp to the user's message timestamps
+    user_message_timestamps[user_id].append(current_time)
+
+    # Remove timestamps older than 10 seconds
+    user_message_timestamps[user_id] = [timestamp for timestamp in user_message_timestamps[user_id] if current_time - timestamp <= 30]
+
+    # Check if the user has sent more than 10 messages in the last 10 seconds
+    if len(user_message_timestamps[user_id]) > 10:
+        await update.message.reply_text("You are sending messages too quickly. Please wait a minute before sending more messages.")
+        context.bot_data[user_id] = current_time + 60  # Timeout the user for 60 seconds
+        return
+
+    # Check if the user is currently timed out
+    if user_id in context.bot_data and current_time < context.bot_data[user_id]:
+        await update.message.reply_text("You are currently timed out. Please wait a bit before sending more messages.")
+        return
+
     if context.user_data.get('awaiting_number'):  
         await update.message.reply_text("Please enter the number of people before asking another question.")
         return  
 
     user_message = update.message.text.lower()
-    user_id = update.message.chat_id
 
     # Check local time (UTC +8)
     tz = pytz.timezone('Asia/Singapore')
@@ -165,26 +192,23 @@ async def reply(update: Update, context: CallbackContext) -> None:
 
 # Function to show latest shower records
 async def shower_status(update: Update, context: CallbackContext) -> None:
-    current_time = datetime.now(pytz.timezone('Asia/Singapore'))
-    if current_time.month == 3 and current_time.day >= 18:
-        pipeline = [
-            {"$sort": {"ref_time": -1}},
-            {"$group": {"_id": "$room_id", "latest_record": {"$first": "$$ROOT"}}}
-        ]
-        results = list(shower_collection.aggregate(pipeline))
+    pipeline = [
+        {"$sort": {"ref_time": -1}},
+        {"$group": {"_id": "$room_id", "latest_record": {"$first": "$$ROOT"}}}
+    ]
+    results = list(shower_collection.aggregate(pipeline))
 
-        if results:
-            latest_timestamp = max(result["latest_record"]["timestamp"] for result in results)
-            response = f"Latest shower records:\n(Last updated: {latest_timestamp})\n"
-            for result in results:
-                room_id = result["latest_record"]["room_id"]
-                number_of_people = result["latest_record"]["number_of_people"]
-                response += f"\n{room_id}: {number_of_people} people on queue"
-            await update.message.reply_text(response)
-        else:
-            await update.message.reply_text("No shower records found.")
+    if results:
+        latest_timestamp = max(result["latest_record"]["timestamp"] for result in results)
+        response = f"Latest shower records:\n(Last updated: {latest_timestamp})\n"
+        for result in results:
+            room_id = result["latest_record"]["room_id"]
+            number_of_people = result["latest_record"]["number_of_people"]
+            response += f"\n{room_id}: {number_of_people} people on queue"
+        await update.message.reply_text(response)
     else:
-        await update.message.reply_text("Function not available at the moment, stay tuned when the camp starts!")
+        await update.message.reply_text("No shower records found.")
+    await update.message.reply_text("Function not available at the moment, stay tuned when the camp starts!")
         
 # Function to show packing list
 async def packing_list(update: Update, context: CallbackContext) -> None:
