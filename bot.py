@@ -40,11 +40,8 @@ unanswered_questions = {}
 def update_ids():
     global ADMIN_IDS, SHOWER_IDS
     print("Updating IDs...")
-    # ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
-    # SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
-    
-    ADMIN_IDS = [1517694368]  # Replace with your admin IDs
-    SHOWER_IDS = [1517694368]  # Replace with your shower IDs
+    ADMIN_IDS = [user["id"] for user in users_collection.find() if user["type"] == "admin"]
+    SHOWER_IDS = [user["id"] for user in users_collection.find() if user["type"] == "shower"]
 
     # Schedule the next update in 60 seconds
     threading.Timer(60, update_ids).start()
@@ -89,9 +86,11 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
     # Check if the message matches an FAQ
 
     # If question is not in FAQs, store it and notify the admins
+    user = await context.bot.get_chat(user_id)
+    username = user.first_name if user.first_name else user.username
     unanswered_questions[user_id] = user_message
     for admin_id in ADMIN_IDS:
-        await context.bot.send_message(chat_id=admin_id, text=f"User {user_id} asked: {user_message}")
+        await context.bot.send_message(chat_id=admin_id, text=f"User {user_id} ({username}) asked: {user_message}")
     await update.message.reply_text("I don't have an answer right now. The admin will reply soon!")
 
 # Function to handle number of people input
@@ -208,7 +207,6 @@ async def shower_status(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text(response)
     else:
         await update.message.reply_text("No shower records found.")
-    await update.message.reply_text("Function not available at the moment, stay tuned when the camp starts!")
         
 # Function to show packing list
 async def packing_list(update: Update, context: CallbackContext) -> None:
@@ -239,6 +237,7 @@ def main():
     app.add_handler(CommandHandler("add_shower", add_shower))
     app.add_handler(CommandHandler("packing", packing_list))
     app.add_handler(CommandHandler("command", cmd_list))
+    app.add_handler(CommandHandler("cmd", cmd_list))
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_number_of_people))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
