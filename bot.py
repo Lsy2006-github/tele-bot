@@ -64,11 +64,16 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
     if len(user_message_timestamps[user_id]) > 10:
         await update.message.reply_text("You are sending messages too quickly. Please wait a minute before sending more messages.")
         context.bot_data[user_id] = current_time + 60  # Timeout the user for 60 seconds
+        global timeout_warning
+        timeout_warning = True
         return
 
     # Check if the user is currently timed out
     if user_id in context.bot_data and current_time < context.bot_data[user_id]:
-        await update.message.reply_text("You are currently timed out. Please wait a bit before sending more messages.")
+        if timeout_warning == False:
+            return
+        await update.message.reply_text("You are currently timed out. Your responeses will be ignored, please wait for a minute.")
+        timeout_warning = False
         return
 
     if context.user_data.get('awaiting_number'):  
