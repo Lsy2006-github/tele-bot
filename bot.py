@@ -14,7 +14,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=lo
 logger = logging.getLogger(__name__)
 
 # MongoDB connection
-uri = "mongodb+srv://lianyang12lol:hXGufXZiT6KPqKFe@telebotcluster.jfekr.mongodb.net/?retryWrites=true&w=majority&appName=telebotcluster"
+uri = YOUR_DB_URL # Replace with your MongoDB URI
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection
@@ -76,7 +76,7 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
         timeout_warning = False
         return
 
-    if context.user_data.get('awaiting_number'):  
+    if context.user_data.get('awaiting_number'):
         await update.message.reply_text("Please enter the number of people before asking another question.")
         return  
 
@@ -228,7 +228,7 @@ async def cmd_list (update: Update, context: CallbackContext) -> None:
 
 # Function to add command handlers and start bot
 def main():
-    TOKEN = "8030276900:AAEeu4g2tirZjYyvxOQLhBUnFX0HAxwdwnY"
+    TOKEN = YOUR_BOT_TOKEN  # Replace with your bot token
     
     app = Application.builder().token(TOKEN).build()
     
