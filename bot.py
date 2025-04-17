@@ -8,13 +8,15 @@ from pymongo.server_api import ServerApi
 import threading
 from collections import defaultdict
 import time
+from dotenv import dotenv_values
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
+config = dotenv_values(".env")  # Load the .env file
 
 # MongoDB connection
-uri = YOUR_DB_URL # Replace with your MongoDB URI
+uri = config.get("YOUR_DB_URL")  # Fetch the value of YOUR_DB_URL
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection
@@ -228,7 +230,7 @@ async def cmd_list (update: Update, context: CallbackContext) -> None:
 
 # Function to add command handlers and start bot
 def main():
-    TOKEN = YOUR_BOT_TOKEN  # Replace with your bot token
+    TOKEN = config.get("YOUR_BOT_TOKEN")  # Replace with your bot token
     
     app = Application.builder().token(TOKEN).build()
     
