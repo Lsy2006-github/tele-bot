@@ -11,6 +11,26 @@
 - Once completed, download a copy of this file into your laptop.
 - Lastly, unzip & open up the folder from VS Code.
 
+
 # STEP 2: Install packages required for the code.
 - In VS Code, run this code below (without the quotation mark):
-"pip3 install 
+"pip3 install logging datetime pytz python-telegram-bot pymongo threading collections time"
+
+- If it throws error, can lmk hahaha
+
+
+# STEP 3: MongoDB (cloud database, will have a recording)
+- In this database, try not to store any data that are sensitive (eg. HP number, name etc.)
+as the database is not secured for this purpose & it's more of real-time updates :))
+
+- Head over to this link: https://www.mongodb.com/
+- Sign up for an account
+- Once signed in, click on Cluster & create a new cluster.
+- Choose the FREE tier cluster.
+- Once completed, follow the instructions prompted & choose Python as the language.
+
+
+# STEP 4: Cloud Hosting
+- This ultilises Google Cloud for the cloud hosting. You can get $300 free credit by
+entering a billing card. But can just delete whole setup, including the card from the project
+after camp has ended to prevent additional costs.
