@@ -1,0 +1,16 @@
+# STEP 1: INITIAL SETUP
+- Download latest version of Python & VS Code on your laptop
+- Python: https://www.python.org/downloads/
+- VS Code: https://code.visualstudio.com/
+
+- Tutorial for Python
+    - Mac: https://youtu.be/3-sPfR4JEQ8?si=_yR8CUATUbb-mpgu
+    - Windows: https://youtu.be/e70ykVBazAg?si=V4loTdb1K_AKlJa1
+
+- In VS Code, you can download Python extension from Extension tab. (optional, more for QoL)
+- Once completed, download a copy of this file into your laptop.
+- Lastly, unzip & open up the folder from VS Code.
+
+# STEP 2: Install packages required for the code.
+- In VS Code, run this code below (without the quotation mark):
+"pip3 install 
